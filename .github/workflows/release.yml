@@ -1,0 +1,111 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Test
+        run: go test ./...
+
+      - name: Vet
+        run: go vet ./...
+
+  release:
+    name: Build release assets
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: linux
+            goarch: arm
+            goarm: "6"
+          - goos: linux
+            goarch: arm
+            goarm: "7"
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+          - goos: windows
+            goarch: arm64
+          - goos: freebsd
+            goarch: amd64
+          - goos: freebsd
+            goarch: arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build
+        env:
+          CGO_ENABLED: "0"
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          GOARM: ${{ matrix.goarm }}
+        run: |
+          set -euo pipefail
+
+          version="${GITHUB_REF_NAME}"
+          suffix="${GOOS}_${GOARCH}"
+          if [ -n "${GOARM:-}" ]; then
+            suffix="${suffix}v${GOARM}"
+          fi
+
+          mkdir -p dist
+          binary="mk"
+          if [ "${GOOS}" = "windows" ]; then
+            binary="mk.exe"
+          fi
+
+          go build \
+            -trimpath \
+            -ldflags "-s -w -X github.com/AaronKaa/mk/internal/app.version=${version}" \
+            -o "dist/${binary}" \
+            .
+
+          archive="mk_${version}_${suffix}"
+          if [ "${GOOS}" = "windows" ]; then
+            (cd dist && zip "${archive}.zip" "${binary}")
+          else
+            tar -C dist -czf "dist/${archive}.tar.gz" "${binary}"
+          fi
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.tar.gz
+            dist/*.zip

@@ -1,0 +1,38 @@
+# Binaries and build output
+/mk
+/bin/
+/dist/
+/build/
+*.exe
+*.test
+*.out
+
+# Go tooling
+/vendor/
+coverage.out
+coverage.html
+*.coverprofile
+
+# Local config and environment
+.env
+.env.*
+!.env.example
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs and temporary files
+*.log
+tmp/
+temp/
+
+# Test data
+
+mk.json
+mk.yaml
+mk.yml
