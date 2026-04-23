@@ -1,10 +1,9 @@
 package config
 
-import "fmt"
-
 type MergeResult struct {
 	Inherited map[string]bool
 	Hidden    map[string]bool
+	Skipped   map[string]string
 }
 
 func MergePrefixed(dst *Config, src Config, prefix string) (MergeResult, error) {
@@ -14,12 +13,28 @@ func MergePrefixed(dst *Config, src Config, prefix string) (MergeResult, error) 
 	result := MergeResult{
 		Inherited: map[string]bool{},
 		Hidden:    map[string]bool{},
+		Skipped:   map[string]string{},
 	}
+	occupied := occupiedNames(*dst)
 	prefixed := map[string]Command{}
 	for name, cmd := range src.Commands {
 		nextName := prefix + name
-		if _, exists := dst.Commands[nextName]; exists {
-			return MergeResult{}, fmt.Errorf("env command %q conflicts with file command", nextName)
+		if occupied[nextName] {
+			result.Skipped[nextName] = "command name conflict"
+			continue
+		}
+		aliases := append([]string(nil), cmd.Aliases...)
+		conflict := false
+		for i, alias := range aliases {
+			aliases[i] = prefix + alias
+			if occupied[aliases[i]] {
+				result.Skipped[nextName] = "alias conflict"
+				conflict = true
+				break
+			}
+		}
+		if conflict {
+			continue
 		}
 		if src.PathForce != "" && cmd.PathForce == "" {
 			cmd.PathForce = src.PathForce
@@ -33,9 +48,7 @@ func MergePrefixed(dst *Config, src Config, prefix string) (MergeResult, error) 
 		if len(src.Env) > 0 {
 			cmd.Env = mergeStringMap(src.Env, cmd.Env)
 		}
-		for i, alias := range cmd.Aliases {
-			cmd.Aliases[i] = prefix + alias
-		}
+		cmd.Aliases = aliases
 		for i, dep := range cmd.Deps {
 			cmd.Deps[i] = prefix + dep
 		}
@@ -43,6 +56,25 @@ func MergePrefixed(dst *Config, src Config, prefix string) (MergeResult, error) 
 		result.Inherited[nextName] = true
 		if src.Hide || cmd.Hide {
 			result.Hidden[nextName] = true
+		}
+		occupied[nextName] = true
+		for _, alias := range aliases {
+			occupied[alias] = true
+		}
+	}
+	for {
+		changed := false
+		for name, cmd := range prefixed {
+			if hasMissingDeps(*dst, prefixed, cmd) {
+				result.Skipped[name] = "missing dependency after merge"
+				delete(result.Inherited, name)
+				delete(result.Hidden, name)
+				delete(prefixed, name)
+				changed = true
+			}
+		}
+		if !changed {
+			break
 		}
 	}
 	for name, cmd := range prefixed {
@@ -52,6 +84,30 @@ func MergePrefixed(dst *Config, src Config, prefix string) (MergeResult, error) 
 		return MergeResult{}, err
 	}
 	return result, nil
+}
+
+func occupiedNames(cfg Config) map[string]bool {
+	out := map[string]bool{}
+	for name := range cfg.Commands {
+		out[name] = true
+	}
+	for _, name := range AllNames(cfg) {
+		out[name] = true
+	}
+	return out
+}
+
+func hasMissingDeps(dst Config, prefixed map[string]Command, cmd Command) bool {
+	for _, dep := range cmd.Deps {
+		if _, ok := dst.Commands[dep]; ok {
+			continue
+		}
+		if _, ok := prefixed[dep]; ok {
+			continue
+		}
+		return true
+	}
+	return false
 }
 
 func mergeVars(layers ...Vars) Vars {

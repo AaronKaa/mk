@@ -31,19 +31,11 @@ func initConfig(args []string, stdout io.Writer) error {
 
 	cfg := config.Config{
 		Commands: map[string]config.Command{
-			"test": {
-				Command: "go test",
+			"ls": {
+				Command: "ls",
 				Open:    true,
-				Help:    "Run tests.",
-				Usage:   "mk test [packages...]",
-				Group:   "Quality",
-			},
-			"build": {
-				Command: "go build ./...",
-				Open:    false,
-				Help:    "Build the project.",
-				Usage:   "mk build",
-				Group:   "Quality",
+				Help:    "List files in the current directory.",
+				Usage:   "mk ls [args...]",
 			},
 		},
 	}

@@ -40,6 +40,10 @@ func Run(args []string, stdout, stderr io.Writer) error {
 		return convertConfig(args[1:], stdout)
 	}
 
+	if args[0] == "--debug-config" {
+		return debugConfig(stdout)
+	}
+
 	switch args[0] {
 	case "--version", "-v", "version":
 		fmt.Fprintf(stdout, "mk %s\n", version)
@@ -72,7 +76,7 @@ func loadOptionalConfig(start string) (config.Source, error) {
 		return source, nil
 	}
 	if config.IsNotFound(err) {
-		return config.Source{Config: config.Config{Commands: map[string]config.Command{}}, Path: "", BaseDir: ".", Inherited: map[string]bool{}, Hidden: map[string]bool{}}, nil
+		return config.Source{Config: config.Config{Commands: map[string]config.Command{}}, Path: "", BaseDir: ".", Inherited: map[string]bool{}, Hidden: map[string]bool{}, Skipped: map[string]string{}}, nil
 	}
 	return config.Source{}, err
 }

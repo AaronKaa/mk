@@ -32,7 +32,7 @@ func FindAndLoadSource(start string) (Source, error) {
 			if err != nil {
 				return Source{}, err
 			}
-			return Source{Config: cfg, Path: EnvCommandsPath, BaseDir: baseDir, Inherited: map[string]bool{}, Hidden: map[string]bool{}}, nil
+			return Source{Config: cfg, Path: EnvCommandsPath, BaseDir: baseDir, Inherited: map[string]bool{}, Hidden: map[string]bool{}, Skipped: map[string]string{}}, nil
 		}
 		return Source{}, err
 	}
@@ -51,9 +51,9 @@ func FindAndLoadSource(start string) (Source, error) {
 		if err != nil {
 			return Source{}, err
 		}
-		return Source{Config: cfg, Path: path, BaseDir: filepath.Dir(path), Inherited: merged.Inherited, Hidden: merged.Hidden}, nil
+		return Source{Config: cfg, Path: path, BaseDir: filepath.Dir(path), Inherited: merged.Inherited, Hidden: merged.Hidden, Skipped: merged.Skipped}, nil
 	}
-	return Source{Config: cfg, Path: path, BaseDir: filepath.Dir(path), Inherited: map[string]bool{}, Hidden: map[string]bool{}}, nil
+	return Source{Config: cfg, Path: path, BaseDir: filepath.Dir(path), Inherited: map[string]bool{}, Hidden: map[string]bool{}, Skipped: map[string]string{}}, nil
 }
 
 func Find(start string) (string, error) {

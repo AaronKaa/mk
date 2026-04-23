@@ -19,7 +19,14 @@ func TestInitCreatesGenericConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := cfg.Commands["test"]; !ok {
-		t.Fatal("expected generic test command")
+	if len(cfg.Commands) != 1 {
+		t.Fatalf("expected one starter command, got %#v", cfg.Commands)
+	}
+	cmd, ok := cfg.Commands["ls"]
+	if !ok {
+		t.Fatal("expected generic ls command")
+	}
+	if cmd.Command != "ls" || !cmd.Open {
+		t.Fatalf("unexpected ls command: %#v", cmd)
 	}
 }

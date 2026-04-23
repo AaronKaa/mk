@@ -29,6 +29,7 @@ type Source struct {
 	BaseDir   string
 	Inherited map[string]bool
 	Hidden    map[string]bool
+	Skipped   map[string]string
 }
 
 type Command struct {

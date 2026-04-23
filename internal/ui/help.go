@@ -34,7 +34,7 @@ func PrintCommandList(w io.Writer, source config.Source) {
 	fmt.Fprintln(w)
 	printCommands(w, source)
 	fmt.Fprintln(w)
-	fmt.Fprintln(w, mutedStyle.Render("Run `mk --help` for usage or `mk edit` to edit commands."))
+	fmt.Fprintln(w, mutedStyle.Render("Run `mk --help` for usage, `mk --debug-config` to inspect merged config, or `mk edit` to edit commands."))
 }
 
 func PrintGlobalHelp(w io.Writer, source config.Source) {
@@ -52,6 +52,7 @@ func PrintGlobalHelp(w io.Writer, source config.Source) {
 	fmt.Fprintln(w, usageStyle.Render("  mk edit"))
 	fmt.Fprintln(w, usageStyle.Render("  mk init [--json|--yaml]"))
 	fmt.Fprintln(w, usageStyle.Render("  mk --convert <json|yaml>"))
+	fmt.Fprintln(w, usageStyle.Render("  mk --debug-config"))
 	fmt.Fprintln(w, usageStyle.Render("  mk --dry-run <command> [args...]"))
 	fmt.Fprintln(w, usageStyle.Render("  mk completion <bash|zsh|fish>"))
 	fmt.Fprintln(w, usageStyle.Render("  mk env [--json|--yaml]"))

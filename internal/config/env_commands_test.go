@@ -90,6 +90,35 @@ func TestFindAndLoadMergesMKCommandsWhenFileExistsWithoutPrefix(t *testing.T) {
 	}
 }
 
+func TestFindAndLoadSkipsConflictingEnvCommandsWhenFileExists(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "mk.json"), []byte(`{"commands":{"test":{"command":"go test ./...","aliases":["t"]},"shell":{"command":"bash"}}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv(EnvCommandsVar, `{"commands":{"test":{"command":"npm test"},"build":{"command":"npm run build","deps":["report"]},"shell":{"command":"sh"},"report":{"command":"echo report","aliases":["t"]},"ok":{"command":"echo ok"}}}`)
+	t.Setenv(EnvCommandsPrefixVar, "")
+
+	source, err := FindAndLoadSource(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := source.Config.Commands["build"]; ok {
+		t.Fatalf("expected build to be skipped because its dependency was skipped: %#v", source.Config.Commands["build"])
+	}
+	if _, ok := source.Config.Commands["report"]; ok {
+		t.Fatalf("expected report to be skipped because its alias conflicted: %#v", source.Config.Commands["report"])
+	}
+	if got := source.Config.Commands["test"].Command; got != "go test ./..." {
+		t.Fatalf("expected local command to win: %#v", source.Config.Commands["test"])
+	}
+	if got := source.Config.Commands["shell"].Command; got != "bash" {
+		t.Fatalf("expected local shell command to win: %#v", source.Config.Commands["shell"])
+	}
+	if got := source.Config.Commands["ok"].Command; got != "echo ok" {
+		t.Fatalf("expected non-conflicting env command to merge: %#v", source.Config.Commands["ok"])
+	}
+}
+
 func TestFindAndLoadSourceMarksInheritedAndHiddenEnvCommands(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "mk.json"), []byte(`{"commands":{"test":{"command":"go test ./..."}}}`), 0o644); err != nil {

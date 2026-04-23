@@ -280,7 +280,7 @@ mk env --yaml
 
 If no `mk.json`, `mk.yaml`, or `mk.yml` is found, `mk` uses `MK_COMMANDS` directly.
 
-If a config file is found, `mk` merges `MK_COMMANDS` into the file-backed project by default. If any command name or alias conflicts, loading fails with a clear error.
+If a config file is found, `mk` merges `MK_COMMANDS` into the file-backed project by default. Local file commands and aliases win; conflicting environment commands are skipped and only non-conflicting commands are inherited.
 
 To keep environment commands isolated, set `MK_COMMANDS_PREFIX`; every environment command, dependency, and alias is prefixed to avoid conflicts:
 
@@ -292,7 +292,7 @@ mk ci:test
 mk ci:t
 ```
 
-Global `env` and `env_file` from `MK_COMMANDS` apply only to the prefixed environment commands when merged into a file-backed project.
+When environment commands are merged into a file-backed project, their global `path_force`, `vars`, `env`, and `env_file` are applied to the inherited commands themselves and do not overwrite the local file's global config.
 
 Environment-provided commands are shown in a separate inherited section in `mk` and `mk --help`.
 
@@ -323,6 +323,7 @@ mk init --yaml
 mk edit
 mk --convert yaml
 mk --convert json
+mk --debug-config
 mk --dry-run test ./...
 mk completion zsh
 mk env
@@ -334,6 +335,10 @@ mk test [args...]
 
 Running `mk` by itself shows the browsable project command list. Running `mk --help` shows usage plus the same command list.
 
+`mk init` creates a minimal starter config with a single `ls` command so you can see the format without having to clean up a larger template.
+
+`mk --debug-config` prints the resolved config source state, including local commands, inherited environment commands, hidden inherited commands, and skipped environment commands with the reason they were skipped.
+
 `mk --convert yaml` converts `mk.json` to `mk.yaml` and removes the original JSON file. `mk --convert json` converts `mk.yaml` or `mk.yml` to `mk.json` and removes the original YAML file. Conversion refuses to overwrite an existing target file.
 
 `mk convert-make [Makefile] [--json|--yaml] [-o path]` converts common Makefiles into mk config. It maps section comments to groups, comments/help output to descriptions, simple Make assignments to `vars`, `$(NAME)` references to `{{NAME}}`, explicit target dependencies to `deps`, `cd dir && ...` to `dir`, strips `@`, and skips the reserved `help` target.
@@ -343,13 +348,20 @@ The converter is intentionally best-effort. It warns when it sees Make-only feat
 The editor is built with Charmbracelet Bubble Tea and writes back to the existing config format. It opens as a browsable command list:
 
 ```text
-enter/e edit  n new  d delete  ctrl+s/s save  up/down select  q quit
+g globals  enter/e edit  n new  d delete  ctrl+s/s save  up/down select  q quit
 ```
 
 Inside the edit form:
 
 ```text
-tab next field  shift+tab previous  space toggle open  ctrl+s save  esc command list
+tab next field  shift+tab previous  space toggle bool  ctrl+s save  esc command list
 ```
 
-Aliases are edited as a comma-separated field on the command itself.
+The global editor covers `header`, `path_force`, `env_file`, `env`, `vars`, and `hide`.
+
+The command editor covers `name`, `command`, `aliases`, `help`, `usage`, `group`, `dir`, `path_force`, `deps`, `env_file`, `env`, `vars`, `open`, `parallel`, `confirm`, and `hide`.
+
+Editor field formats:
+- Lists are comma-separated, for example `.env, .env.local`
+- `env` uses `KEY=value, OTHER=value`
+- `vars` uses `KEY=value` for plain values and `KEY:=command` for shell-backed values
