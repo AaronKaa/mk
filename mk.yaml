@@ -1,0 +1,22 @@
+header: mk Project Commands
+commands:
+  build:
+    command: go build ./...
+    help: Build the project.
+    usage: mk build
+    group: Development
+  test:
+    command: go test ./...
+    help: Run the test suite.
+    usage: mk test
+    group: Development
+  install:
+    command: go install .
+    help: Install the current module.
+    usage: mk install
+    group: Development
+  fmt:
+    command: gofmt -w .
+    help: Format Go files in the repository.
+    usage: mk fmt
+    group: Development

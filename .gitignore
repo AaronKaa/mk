@@ -30,9 +30,3 @@ Thumbs.db
 *.log
 tmp/
 temp/
-
-# Test data
-
-mk.json
-mk.yaml
-mk.yml
