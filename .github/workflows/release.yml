@@ -99,13 +99,32 @@ jobs:
           archive="mk_${version}_${suffix}"
           if [ "${GOOS}" = "windows" ]; then
             (cd dist && zip "${archive}.zip" "${binary}")
+            echo "asset=dist/${archive}.zip" >> "${GITHUB_ENV}"
           else
             tar -C dist -czf "dist/${archive}.tar.gz" "${binary}"
+            echo "asset=dist/${archive}.tar.gz" >> "${GITHUB_ENV}"
           fi
 
-      - name: Upload release asset
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.goos }}-${{ matrix.goarch }}-${{ matrix.goarm || 'none' }}
+          path: ${{ env.asset }}
+          if-no-files-found: error
+
+  publish:
+    name: Publish release
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download built artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: release-*
+          merge-multiple: true
+
+      - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            dist/*.tar.gz
-            dist/*.zip
+          files: dist/*
